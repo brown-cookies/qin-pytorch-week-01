@@ -32,3 +32,14 @@ Machine Learning Repository
 | Features | 13, all numeric (chemical measurements such as alcohol, proline, flavanoids) |
 | Classes | 3 (`class_0`: 59 rows, `class_1`: 71 rows, `class_2`: 48 rows) |
 | Missing values | None |
+
+## About the `notebook/` and `src/`
+
+The `notebook/` is used for experimentation, exploration, and learning.
+The `src/` is where the actual code implementation, after `notebook/`.
+
+## AI Usage
+| | |
+|---|---|
+| File/Function | How it was used |
+| `load_data()` | Asked AI for guidance on how to load, process, split training/testing of the wine dataset. Asked the concept for data preparation, StandardScaler |
