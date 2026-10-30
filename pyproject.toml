@@ -1,5 +1,5 @@
 [project]
-name = "Qin Pytorch Week 01"
+name = "qin-pytorch-week-01"
 version = "0.1.0"
 description = "A neural network from first principles"
 requires-python = ">=3.12"
