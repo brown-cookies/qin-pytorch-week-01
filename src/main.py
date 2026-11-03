@@ -9,6 +9,9 @@ import torch
 RANDOM_STATE = 42
 TEST_SIZE_SPLIT = 0.3
 
+EPOCH = 10
+LEARNING_RATE = 0.01
+
 
 def load_data():
     """
@@ -40,13 +43,42 @@ def load_data():
     y_train = torch.tensor(y_train, dtype=torch.long)
     y_test = torch.tensor(y_test, dtype=torch.long)
 
-    return X_train, X_test, y_train, y_test, scaler
+    class_names = [str(name) for name in wine.target_names]
+
+    return X_train, X_test, y_train, y_test, class_names, scaler
+
+
+def init_weights_biases(n_features, n_classes, seed=RANDOM_STATE):
+    """Create the starting weights and bias for one linear layer."""
+    generator = torch.Generator().manual_seed(seed)
+
+    W = torch.randn(n_features, n_classes, generator=generator)
+    b = torch.zeros(n_classes)
+
+    return W, b
+
+
+def forward_pass(X, W, b):
+    """One linear layer manual forward pass"""
+    z = X @ W + b
+    return z
+
+
+def loss_function(pred, actual):
+
+    return ...
 
 
 def main():
     """Entry point of the project."""
 
-    X_train, X_test, y_train, y_test, scaler = load_data()
+    X_train, X_test, y_train, y_test, class_names, scaler = load_data()
+
+    n_features = X_train.data.shape[1]
+    n_classes = len(class_names)
+
+    W, b = init_weights_biases(n_features, n_classes)
+    z = forward_pass(X_train, W, b)
 
     return 0
 
