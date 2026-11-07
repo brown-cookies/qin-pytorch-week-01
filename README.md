@@ -33,10 +33,19 @@ Machine Learning Repository
 | Classes | 3 (`class_0`: 59 rows, `class_1`: 71 rows, `class_2`: 48 rows) |
 | Missing values | None |
 
-## About the `notebook/` and `src/`
-
-The `notebook/` is used for experimentation, exploration, and learning.
-The `src/` is where the actual code implementation, after `notebook/`.
+## Data from One layer Manual Classification
+```
+Epoch    0 | Loss: 3.4481
+Epoch   10 | Loss: 3.1378
+Epoch   20 | Loss: 2.8515
+Epoch   30 | Loss: 2.5900
+Epoch   40 | Loss: 2.3533
+Epoch   50 | Loss: 2.1406
+Epoch   60 | Loss: 1.9508
+Epoch   70 | Loss: 1.7823
+Epoch   80 | Loss: 1.6333
+Epoch   90 | Loss: 1.5019
+```
 
 ## AI Usage
 | | |
