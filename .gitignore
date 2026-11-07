@@ -10,3 +10,6 @@ runs/
 .DS_Store
 .vscode/
 .idea/
+
+# Notebook should not be included in the repo
+notebook/
