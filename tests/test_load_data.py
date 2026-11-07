@@ -1,10 +1,12 @@
 from math import ceil
 
-from src.main import load_data
+from src.data import load_datasets
 
 
 def test_train_split_should_have_70_30_ratio(wine):
-    X_train, X_test, y_train, y_test, scaler = load_data()
+    X_train, X_test, y_train, y_test, _, _ = load_datasets(
+        test_split=0.3, seed=42
+    )
 
     total_samples = wine.data.shape[0]
 
@@ -19,7 +21,9 @@ def test_train_split_should_have_70_30_ratio(wine):
 
 
 def test_features_should_have_same_number_of_columns_as_original_dataset(wine):
-    X_train, X_test, _, _, _ = load_data()
+    X_train, X_test, _, _, _, _ = load_datasets(
+        test_split=0.3, seed=42
+    )
 
     expected_features = wine.data.shape[1]
 
