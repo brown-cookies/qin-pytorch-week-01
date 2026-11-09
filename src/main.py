@@ -2,9 +2,9 @@ import sys
 
 import torch
 
-from config import config
-from data import load_datasets
-from train import ManualWineClassification, AutoWineClassificationWithTorch
+from src.config import config
+from src.data import load_datasets
+from src.train import ManualWineClassification, AutoWineClassificationWithTorch
 
 
 # Note to myself

@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
 
-from config import Config
+
+from src.config import Config
 
 
 class ManualWineClassification():
@@ -102,5 +103,10 @@ class ManualWineClassification():
 
 
 class AutoWineClassificationWithTorch(nn.Module):
-    def __init__(self):
-        ...
+    def __init__(self, n_features, n_classes, cfg: Config):
+        self.cfg = cfg
+        self.linear = nn.Linear(n_features, n_classes)
+
+    @staticmethod
+    def forward(self, X, W, b):
+        return self.linear(X, W, b)
