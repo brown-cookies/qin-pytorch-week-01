@@ -30,7 +30,7 @@ def main():
         cfg=config,
     )
 
-    auto_model = AutoWineClassificationWithTorch()
+    # auto_model = AutoWineClassificationWithTorch()
 
     manual_loss_per_epoch = manual_model.train_model(X_train, y_train)
 
