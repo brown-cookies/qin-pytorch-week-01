@@ -4,6 +4,7 @@ import torch
 
 from src.config import config
 from src.data import load_datasets
+from src.eval import evaluate_model, compare_model
 from src.train import ManualWineClassification, AutoWineClassificationWithTorch
 
 
@@ -46,9 +47,15 @@ def main():
         X_train, y_train, is_resume=False
     )
 
-    for epoch, loss in enumerate(manual_loss_per_epoch):
-        if epoch % 10 == 0:
-            print(f"Epoch {epoch:4d} | Loss: {loss:.4f}")
+    manual_model.load_checkpoint("best_run.pt")
+
+    result = evaluate_model(manual_model, X_test, y_test,
+                            class_names=list(class_names))
+
+    print(f"loss:     {result['loss']:.4f}")
+    print(f"accuracy: {result['accuracy']:.2%}")
+    print(f"macro f1: {result['macro_f1']:.2%}")
+    print(result["confusion"])
 
     return 0
 
