@@ -21,6 +21,8 @@ can show it rather than assert it.
 ## Table of Contents
 
 - [Data](#data)
+- [Claims](#claims)
+  - [The hand-compute gradient agrees with Pytorch Autograd](#the-hand-compute-gradient-agrees-with-pytorch-autograd)
 - [Softmax and Cross-Entropy Gradient Derivation](#softmax-and-cross-entropy-gradient-derivation)
 - [Data from One Layer Manual Classification](#data-from-one-layer-manual-classification)
 - [Error Analysis](#error-analysis)
@@ -44,6 +46,101 @@ Machine Learning Repository
 | Features | 13, all numeric (chemical measurements such as alcohol, proline, flavanoids) |
 | Classes | 3 (`class_0`: 59 rows, `class_1`: 71 rows, `class_2`: 48 rows) |
 | Missing values | None |
+
+## Claims
+
+### The hand-compute gradient agrees with Pytorch Autograd
+
+**Claim.** For a single linear layer with softmax and cross-entropy loss, the
+manual gradients `dW` and `db` match the gradients PyTorch autograd computes
+for the same weights and data.
+**Tolerance.** I used PyTorch default tolerance becuase it works.
+
+```
+pytest -k test_manual_gradient_matches_pytorch_autograd
+```
+
+Example Result Weight using PyTorch default Tolerance:
+
+```
+Manual
+tensor([[ 0.0022,  0.0331, -0.0353],
+        [-0.2059,  0.3519, -0.1460],
+        [-0.0463, -0.0265,  0.0728],
+        [ 0.1888, -0.0548, -0.1340],
+        [ 0.0737,  0.0205, -0.0942],
+        [ 0.0166,  0.1661, -0.1827],
+        [ 0.1844, -0.0798, -0.1046],
+        [ 0.0460,  0.1271, -0.1731],
+        [-0.1501, -0.0260,  0.1761],
+        [-0.0710,  0.1818, -0.1108],
+        [-0.0239, -0.1414,  0.1654],
+        [ 0.1160, -0.0612, -0.0548],
+        [ 0.1366, -0.0656, -0.0710]])
+Auto
+tensor([[ 0.0022,  0.0331, -0.0353],
+        [-0.2059,  0.3519, -0.1460],
+        [-0.0463, -0.0265,  0.0728],
+        [ 0.1888, -0.0548, -0.1340],
+        [ 0.0737,  0.0205, -0.0942],
+        [ 0.0166,  0.1661, -0.1827],
+        [ 0.1844, -0.0798, -0.1046],
+        [ 0.0460,  0.1271, -0.1731],
+        [-0.1501, -0.0260,  0.1761],
+        [-0.0710,  0.1818, -0.1108],
+        [-0.0239, -0.1414,  0.1654],
+        [ 0.1160, -0.0612, -0.0548],
+        [ 0.1366, -0.0656, -0.0710]])
+```
+
+You will see they are bit-to-bit Identical. Now upping the precision up to 10.
+
+```
+Manual
+tensor([[ 0.0022238293,  0.0330882296, -0.0353120416],
+        [-0.2059118748,  0.3518741727, -0.1459622830],
+        [-0.0462870710, -0.0264957119,  0.0727827847],
+        [ 0.1887748688, -0.0548103005, -0.1339645535],
+        [ 0.0736719370,  0.0205490235, -0.0942209512],
+        [ 0.0165816788,  0.1660780609, -0.1826597601],
+        [ 0.1843553931, -0.0797605142, -0.1045949385],
+        [ 0.0459810905,  0.1271382421, -0.1731193364],
+        [-0.1500999629, -0.0259582978,  0.1760582477],
+        [-0.0709982887,  0.1817865521, -0.1107882559],
+        [-0.0239374340, -0.1414229274,  0.1653603464],
+        [ 0.1159975901, -0.0612190887, -0.0547785237],
+        [ 0.1365945637, -0.0655746907, -0.0710198581]])
+Auto
+tensor([[ 0.0022238255,  0.0330882147, -0.0353120416],
+        [-0.2059118748,  0.3518741727, -0.1459622979],
+        [-0.0462870710, -0.0264957026,  0.0727827698],
+        [ 0.1887748688, -0.0548102967, -0.1339645535],
+        [ 0.0736719370,  0.0205490235, -0.0942209661],
+        [ 0.0165816825,  0.1660780609, -0.1826597601],
+        [ 0.1843554229, -0.0797605142, -0.1045949385],
+        [ 0.0459810905,  0.1271382272, -0.1731193215],
+        [-0.1500999629, -0.0259582959,  0.1760582626],
+        [-0.0709982887,  0.1817865521, -0.1107882485],
+        [-0.0239374284, -0.1414229274,  0.1653603613],
+        [ 0.1159975752, -0.0612190887, -0.0547785163],
+        [ 0.1365945637, -0.0655746907, -0.0710198656]])
+```
+
+They are now not bit-to-bit but still agrees to the PyTorch default tolerance. This goes the same with bias.
+Default precision
+```
+Manual
+tensor([ 0.1021, -0.0552, -0.0469])
+Auto
+tensor([ 0.1021, -0.0552, -0.0469])
+```
+Upping precision to 10
+```
+Manual
+tensor([ 0.1021387279, -0.0552361421, -0.0469025895])
+Auto
+tensor([ 0.1021387130, -0.0552361496, -0.0469025783])
+```
 
 ## Softmax and Cross-Entropy Gradient Derivation
 
