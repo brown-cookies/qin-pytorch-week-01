@@ -1,4 +1,4 @@
-# A neural network from first principles
+# A neural network from first principles  
 
 ## Problem
 
@@ -18,6 +18,20 @@ get your numbers.
 What matters is that you can say what the abstraction is hiding, and that you
 can show it rather than assert it.
 
+## Table of Contents
+
+- [Data](#data)
+- [Claims](#claims)
+  - [The hand-compute gradient agrees with Pytorch Autograd](#the-hand-compute-gradient-agrees-with-pytorch-autograd)
+- [Softmax and Cross-Entropy Gradient Derivation](#softmax-and-cross-entropy-gradient-derivation)
+- [Data from One Layer Manual Classification](#data-from-one-layer-manual-classification)
+- [Error Analysis](#error-analysis)
+- [Diagnosis](#diagnosis)
+- [Reproducibility](#reproducibility)
+  - [Quick Setup](#quick-setup)
+  - [Re-running](#re-running)
+- [AI Usage](#ai-usage)
+
 ## Data
 
 The dataset is the Wine recognition dataset, loaded with
@@ -33,13 +47,307 @@ Machine Learning Repository
 | Classes | 3 (`class_0`: 59 rows, `class_1`: 71 rows, `class_2`: 48 rows) |
 | Missing values | None |
 
-## About the `notebook/` and `src/`
+## Claims
 
-The `notebook/` is used for experimentation, exploration, and learning.
-The `src/` is where the actual code implementation, after `notebook/`.
+### The hand-compute gradient agrees with Pytorch Autograd
+
+**Claim.** For a single linear layer with softmax and cross-entropy loss, the
+manual gradients `dW` and `db` match the gradients PyTorch autograd computes
+for the same weights and data.
+**Tolerance.** I used PyTorch default tolerance becuase it works.
+
+```
+pytest -k test_manual_gradient_matches_pytorch_autograd
+```
+
+Example Result Weight using PyTorch default Tolerance:
+
+```
+Manual
+tensor([[ 0.0022,  0.0331, -0.0353],
+        [-0.2059,  0.3519, -0.1460],
+        [-0.0463, -0.0265,  0.0728],
+        [ 0.1888, -0.0548, -0.1340],
+        [ 0.0737,  0.0205, -0.0942],
+        [ 0.0166,  0.1661, -0.1827],
+        [ 0.1844, -0.0798, -0.1046],
+        [ 0.0460,  0.1271, -0.1731],
+        [-0.1501, -0.0260,  0.1761],
+        [-0.0710,  0.1818, -0.1108],
+        [-0.0239, -0.1414,  0.1654],
+        [ 0.1160, -0.0612, -0.0548],
+        [ 0.1366, -0.0656, -0.0710]])
+Auto
+tensor([[ 0.0022,  0.0331, -0.0353],
+        [-0.2059,  0.3519, -0.1460],
+        [-0.0463, -0.0265,  0.0728],
+        [ 0.1888, -0.0548, -0.1340],
+        [ 0.0737,  0.0205, -0.0942],
+        [ 0.0166,  0.1661, -0.1827],
+        [ 0.1844, -0.0798, -0.1046],
+        [ 0.0460,  0.1271, -0.1731],
+        [-0.1501, -0.0260,  0.1761],
+        [-0.0710,  0.1818, -0.1108],
+        [-0.0239, -0.1414,  0.1654],
+        [ 0.1160, -0.0612, -0.0548],
+        [ 0.1366, -0.0656, -0.0710]])
+```
+
+You will see they are bit-to-bit Identical. Now upping the precision up to 10.
+
+```
+Manual
+tensor([[ 0.0022238293,  0.0330882296, -0.0353120416],
+        [-0.2059118748,  0.3518741727, -0.1459622830],
+        [-0.0462870710, -0.0264957119,  0.0727827847],
+        [ 0.1887748688, -0.0548103005, -0.1339645535],
+        [ 0.0736719370,  0.0205490235, -0.0942209512],
+        [ 0.0165816788,  0.1660780609, -0.1826597601],
+        [ 0.1843553931, -0.0797605142, -0.1045949385],
+        [ 0.0459810905,  0.1271382421, -0.1731193364],
+        [-0.1500999629, -0.0259582978,  0.1760582477],
+        [-0.0709982887,  0.1817865521, -0.1107882559],
+        [-0.0239374340, -0.1414229274,  0.1653603464],
+        [ 0.1159975901, -0.0612190887, -0.0547785237],
+        [ 0.1365945637, -0.0655746907, -0.0710198581]])
+Auto
+tensor([[ 0.0022238255,  0.0330882147, -0.0353120416],
+        [-0.2059118748,  0.3518741727, -0.1459622979],
+        [-0.0462870710, -0.0264957026,  0.0727827698],
+        [ 0.1887748688, -0.0548102967, -0.1339645535],
+        [ 0.0736719370,  0.0205490235, -0.0942209661],
+        [ 0.0165816825,  0.1660780609, -0.1826597601],
+        [ 0.1843554229, -0.0797605142, -0.1045949385],
+        [ 0.0459810905,  0.1271382272, -0.1731193215],
+        [-0.1500999629, -0.0259582959,  0.1760582626],
+        [-0.0709982887,  0.1817865521, -0.1107882485],
+        [-0.0239374284, -0.1414229274,  0.1653603613],
+        [ 0.1159975752, -0.0612190887, -0.0547785163],
+        [ 0.1365945637, -0.0655746907, -0.0710198656]])
+```
+
+They are now not bit-to-bit but still agrees to the PyTorch default tolerance. This goes the same with bias.
+Default precision
+```
+Manual
+tensor([ 0.1021, -0.0552, -0.0469])
+Auto
+tensor([ 0.1021, -0.0552, -0.0469])
+```
+Upping precision to 10
+```
+Manual
+tensor([ 0.1021387279, -0.0552361421, -0.0469025895])
+Auto
+tensor([ 0.1021387130, -0.0552361496, -0.0469025783])
+```
+
+## Softmax and Cross-Entropy Gradient Derivation
+
+For this derivation, consider one sample with logits for the classes. The Wine
+classifier has three classes.
+
+### 1. Softmax
+
+The softmax probability for class $j$ is:
+  
+$$
+P_j = \frac{e^{z_j}}{\displaystyle\sum_{k=1}^{C} e^{z_k}}
+$$
+
+Let:
+
+$$
+S = \sum_{k=1}^{C} e^{z_k}
+$$
+
+Then:
+
+
+$$
+P_i = \frac{e^{z_i}}{S}
+$$
+
+### 2. Cross-Entropy
+
+The cross-entropy loss for one sample is:
+
+$$
+L = -\sum_{i=1}^{C} y_i \log(P_i)
+$$
+
+Differentiate the loss with respect to $P_i$:
+
+$$
+\frac{\partial L}{\partial P_i}
+= -y_i\frac{\partial}{\partial P_i}\log(P_i)
+$$
+
+Since the derivative of $\log(P_i)$ is $1/P_i$:
+
+$$
+\boxed{\frac{\partial L}{\partial P_i}=-\frac{y_i}{P_i}}
+$$
+
+### 3. Differentiate Softmax with Respect to a Logit
+
+Starting from:
+
+$$
+P_i = \frac{e^{z_i}}{S}
+$$
+
+Apply the quotient rule with respect to $z_j$:
+
+$$
+\frac{\partial P_i}{\partial z_j}
+=\frac{
+S\frac{\partial e^{z_i}}{\partial z_j}
+-e^{z_i}\frac{\partial S}{\partial z_j}
+}{S^2}
+$$
+
+The two derivatives are:
+
+$$
+\frac{\partial e^{z_i}}{\partial z_j}=
+\begin{cases}
+e^{z_i} & i=j,\\
+0 & i\ne j
+\end{cases}
+$$
+
+and:
+
+$$
+\frac{\partial S}{\partial z_j}=e^{z_j}
+$$
+
+Now consider the two cases.
+
+**Case A: $i=j$**
+
+$$
+\frac{\partial P_i}{\partial z_i}
+=\frac{e^{z_i}S-e^{z_i}e^{z_i}}{S^2}
+$$
+
+$$
+=\frac{e^{z_i}(S-e^{z_i})}{S^2}
+
+$$
+
+$$
+=\frac{e^{z_i}}{S}\left(1-\frac{e^{z_i}}{S}\right)
+$$
+
+Since $P_i=e^{z_i}/S$:
+
+$$
+\boxed{\frac{\partial P_i}{\partial z_i}=P_i(1-P_i)}
+$$
+
+**Case B: $i\ne j$**
+
+$$
+\frac{\partial P_i}{\partial z_j}
+=\frac{-e^{z_i}e^{z_j}}{S^2}
+$$
+
+$$
+=-\frac{e^{z_i}}{S}\frac{e^{z_j}}{S}
+$$
+
+Since $P_i=e^{z_i}/S$ and $P_j=e^{z_j}/S$:
+
+$$
+\boxed{\frac{\partial P_i}{\partial z_j}=-P_iP_j}
+$$
+
+### 4. Apply the Chain Rule
+
+The loss depends on the logits through the probabilities. Apply the chain
+rule:
+
+$$
+\frac{\partial L}{\partial z_j}
+=\sum_{i=1}^{C}
+\frac{\partial L}{\partial P_i}
+\frac{\partial P_i}{\partial z_j}
+$$
+
+Separate the term where $i=j$ from the terms where $i\ne j$:
+
+$$
+\frac{\partial L}{\partial z_j}
+= -\frac{y_j}{P_j}P_j(1-P_j)
++\sum_{i\ne j}\left(-\frac{y_i}{P_i}\right)(-P_iP_j)
+$$
+
+Cancel the probabilities in each term:
+
+$$
+= -y_j(1-P_j)+\sum_{i\ne j}y_iP_j
+$$
+
+Expand the first term:  
+
+$$
+= -y_j+y_jP_j+\sum_{i\ne j}y_iP_j
+$$
+
+Factor out $P_j$ from the last two terms:
+
+$$
+= -y_j+P_j\left(y_j+\sum_{i\ne j}y_i\right)
+$$
+
+For one-hot encoding, the target values sum to one:
+
+$$
+\sum_{i=1}^{C}y_i=1
+$$
+
+Therefore:
+
+$$
+\frac{\partial L}{\partial z_j}=-y_j+P_j(1)
+$$
+
+The final gradient is:
+
+$$
+\boxed{\frac{\partial L}{\partial z_j}=P_j-y_j}
+$$
+
+## Data from One layer Manual Classification
+```
+Epoch    0 | Loss: 3.4481
+Epoch   10 | Loss: 3.1378
+Epoch   20 | Loss: 2.8515
+Epoch   30 | Loss: 2.5900
+Epoch   40 | Loss: 2.3533
+Epoch   50 | Loss: 2.1406
+Epoch   60 | Loss: 1.9508
+Epoch   70 | Loss: 1.7823
+Epoch   80 | Loss: 1.6333
+Epoch   90 | Loss: 1.5019
+```
+
+## Error Analysis
+
+## Diagnosis
+
+## Reproducibility
+
+### Quick Setup
+
+### Re-running
+
 
 ## AI Usage
-| | |
-|---|---|
 | File/Function | How it was used |
+|---|---|
 | `load_data()` | Asked AI for guidance on how to load, process, split training/testing of the wine dataset. Asked the concept for data preparation, StandardScaler |
+| `softmax()` and `loss()` | Asked AI to explain the purpose of softmax, cross-entropy, one-hot encoded labels, and the numerical-stability steps used in the implementation. |
+| `gradient()` | Used AI explanations to understand the chain rule and how the softmax and cross-entropy derivatives relate to the manual gradient. The handwritten derivation and manual gradient implementation are my own work. |

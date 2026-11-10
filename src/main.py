@@ -1,52 +1,54 @@
 import sys
 
-from sklearn.datasets import load_wine
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
 import torch
 
+from src.config import config
+from src.data import load_datasets
+from src.train import ManualWineClassification, AutoWineClassificationWithTorch
 
-RANDOM_STATE = 42
-TEST_SIZE_SPLIT = 0.3
 
+# Note to myself
+# Use Softmax + Cross-Entropy Loss for Multiple classification
 
-def load_data():
+# Flow for Multiple classification
+# Forward Pass -> Softmax -> Cross-Entropy Loss -> Gradient -> Loop
+
+# TODO: Add print summary
+def _print_training_summary():
     """
-    Load the Wine dataset, split it, standardize the features,
-    and convert everything into PyTorch tensors.
+    Prints the training summary of either Manual or Auto
+    with their respective evaluation
     """
 
-    wine = load_wine()
-
-    X = wine.data
-    y = wine.target
-
-    X_train, X_test, y_train, y_test = train_test_split(
-        X,
-        y,
-        test_size=TEST_SIZE_SPLIT,
-        stratify=y,
-        random_state=RANDOM_STATE,
-    )
-
-    scaler = StandardScaler()
-
-    X_train = scaler.fit_transform(X_train)
-    X_test = scaler.transform(X_test)
-
-    X_train = torch.tensor(X_train, dtype=torch.float32)
-    X_test = torch.tensor(X_test, dtype=torch.float32)
-
-    y_train = torch.tensor(y_train, dtype=torch.long)
-    y_test = torch.tensor(y_test, dtype=torch.long)
-
-    return X_train, X_test, y_train, y_test, scaler
+    ...
 
 
 def main():
     """Entry point of the project."""
 
-    X_train, X_test, y_train, y_test, scaler = load_data()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    X_train, X_test, y_train, y_test, class_names, scaler = load_datasets(
+        test_split=config.test_size_split,
+        seed=config.seed
+    )
+
+    manual_model = ManualWineClassification(
+        n_features=X_train.shape[1],
+        n_classes=len(class_names),
+        checkpoint_path="runs/manual/",
+        cfg=config,
+    )
+
+    # auto_model = AutoWineClassificationWithTorch()
+
+    manual_loss_per_epoch = manual_model.train_model(
+        X_train, y_train, is_resume=False
+    )
+
+    for epoch, loss in enumerate(manual_loss_per_epoch):
+        if epoch % 10 == 0:
+            print(f"Epoch {epoch:4d} | Loss: {loss:.4f}")
 
     return 0
 
