@@ -13,6 +13,15 @@ from src.train import ManualWineClassification, AutoWineClassificationWithTorch
 # Flow for Multiple classification
 # Forward Pass -> Softmax -> Cross-Entropy Loss -> Gradient -> Loop
 
+# TODO: Add print summary
+def _print_training_summary():
+    """
+    Prints the training summary of either Manual or Auto
+    with their respective evaluation
+    """
+
+    ...
+
 
 def main():
     """Entry point of the project."""
@@ -27,12 +36,15 @@ def main():
     manual_model = ManualWineClassification(
         n_features=X_train.shape[1],
         n_classes=len(class_names),
+        checkpoint_path="runs/manual/",
         cfg=config,
     )
 
     # auto_model = AutoWineClassificationWithTorch()
 
-    manual_loss_per_epoch = manual_model.train_model(X_train, y_train)
+    manual_loss_per_epoch = manual_model.train_model(
+        X_train, y_train, is_resume=False
+    )
 
     for epoch, loss in enumerate(manual_loss_per_epoch):
         if epoch % 10 == 0:
