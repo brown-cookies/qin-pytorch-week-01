@@ -30,15 +30,16 @@ def main():
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    X_train, X_test, y_train, y_test, class_names, scaler = load_datasets(
+    data = load_datasets(
+        val_split=config.val_size_split,
         test_split=config.test_size_split,
         seed=config.seed
     )
 
     manual_model = ManualWineClassification(
-        n_features=X_train.shape[1],
+        n_features=data["X_train"].shape[1],
         n_hidden=20,
-        n_classes=len(class_names),
+        n_classes=len(data["class_names"]),
         checkpoint_path="runs/manual/",
         cfg=config,
     )
@@ -46,16 +47,16 @@ def main():
     # auto_model = AutoWineClassificationWithTorch()
 
     manual_model.train_model(
-        X_train, y_train, is_resume=False
+        data["X_train"], data["y_train"], is_resume=False
     )
 
     checkpoint = manual_model.load_checkpoint("best_run.pt")
 
     result = evaluate_model(
         manual_model,
-        X_test,
-        y_test,
-        class_names=list(class_names)
+        data["X_test"],
+        data["y_test"],
+        class_names=list(data["class_names"])
     )
 
     print(f"loss:     {result['loss']:.4f}")
