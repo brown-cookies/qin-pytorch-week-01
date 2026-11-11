@@ -101,8 +101,12 @@ class ManualWineClassification():
     def load_checkpoint(self, name):
         """Load a training checkpoint"""
         path = Path(self.checkpoint_path) / name
+        checkpoint = torch.load(path, weights_only=True, map_location="cpu")
 
-        return torch.load(path)
+        self.W = checkpoint["W"]
+        self.b = checkpoint["b"]
+
+        return checkpoint
 
     def train_model(self, X_train, y_train, is_resume=False):
         epochs = self.cfg.epochs
@@ -118,8 +122,6 @@ class ManualWineClassification():
             )
 
             last_epoch = checkpoint["epoch"]
-            self.W = checkpoint["W"]
-            self.b = checkpoint["b"]
             best_loss = checkpoint["best_loss"]
             loss_per_epoch = checkpoint["loss_per_epoch"]
 
@@ -149,8 +151,6 @@ class ManualWineClassification():
         self.save_checkpoint(
             f"last_run.pt", epoch, loss_per_epoch, best_loss
         )
-
-        return loss_per_epoch
 
 
 class AutoWineClassificationWithTorch(nn.Module):
