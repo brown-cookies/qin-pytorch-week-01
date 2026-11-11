@@ -5,6 +5,7 @@ import torch
 from src.config import config
 from src.data import load_datasets
 from src.eval import evaluate_model, compare_model
+from src.plot import plot_loss_per_epoch
 from src.train import ManualWineClassification, AutoWineClassificationWithTorch
 
 
@@ -36,6 +37,7 @@ def main():
 
     manual_model = ManualWineClassification(
         n_features=X_train.shape[1],
+        n_hidden=20,
         n_classes=len(class_names),
         checkpoint_path="runs/manual/",
         cfg=config,
@@ -43,11 +45,11 @@ def main():
 
     # auto_model = AutoWineClassificationWithTorch()
 
-    manual_loss_per_epoch = manual_model.train_model(
+    manual_model.train_model(
         X_train, y_train, is_resume=False
     )
 
-    manual_model.load_checkpoint("best_run.pt")
+    checkpoint = manual_model.load_checkpoint("best_run.pt")
 
     result = evaluate_model(
         manual_model,
@@ -59,6 +61,8 @@ def main():
     print(f"loss:     {result['loss']:.4f}")
     print(f"accuracy: {result['accuracy']:.2%}")
     print(f"macro f1: {result['macro_f1']:.2%}")
+
+    plot_loss_per_epoch("manual", checkpoint["loss_per_epoch"])
 
     return 0
 

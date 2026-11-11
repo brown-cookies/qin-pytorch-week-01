@@ -10,7 +10,7 @@ from sklearn.metrics import (
 
 
 def evaluate_model(model, X, y, class_names=None):
-    z = model.forward_pass(X, model.W, model.b)
+    _, _, z = model.forward_pass(X, model.W1, model.b1, model.W2, model.b2)
 
     probs = model.softmax(z).numpy()
     preds = z.argmax(dim=1).numpy()

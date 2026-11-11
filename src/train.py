@@ -8,27 +8,31 @@ from src.config import Config
 
 
 class ManualWineClassification():
-    def __init__(self, n_features, n_classes, checkpoint_path, cfg: Config):
+    def __init__(self, n_features, n_hidden, n_classes, checkpoint_path, cfg: Config):
         self.checkpoint_path = checkpoint_path
         self.cfg = cfg
-        self.W, self.b = self.init_weights_biases(
-            n_features, n_classes, self.cfg.seed
+        self.W1, self.b1, self.W2, self.b2 = self.init_weights_biases(
+            n_features, n_hidden, n_classes, self.cfg.seed
         )
 
-    def init_weights_biases(self, n_features, n_classes, seed: int):
-        """Create the starting weights and bias for one linear layer."""
+    def init_weights_biases(self, n_features, n_hidden, n_classes, seed: int):
+        """Create the starting weights and bias for two linear layer."""
         generator = torch.Generator().manual_seed(seed)
 
-        W = torch.randn(n_features, n_classes, generator=generator)
-        b = torch.zeros(n_classes)
+        W1 = torch.randn(n_features, n_hidden, generator=generator)
+        b1 = torch.zeros(n_hidden)
 
-        return W, b
+        W2 = torch.randn(n_hidden, n_classes, generator=generator)
+        b2 = torch.zeros(n_classes)
 
-    def forward_pass(self, X, W, b):
-        """One linear layer manual forward pass"""
-        z = X @ W + b
+        return W1, b1, W2, b2
 
-        return z
+    def forward_pass(self, X, W1, b1, W2, b2):
+        """Two linear layer manual forward pass"""
+        z1 = X @ W1 + b1
+        a1 = torch.relu(z1)
+        z2 = a1 @ W2 + b2
+        return z1, a1, z2
 
     def softmax(self, pred):
         """Convert raw-score into probabilities"""
@@ -62,24 +66,31 @@ class ManualWineClassification():
 
         return loss
 
-    def gradient(self, X, pred, actual):
+    def gradient(self, X, z1, a1, pred, actual):
         """Manual hand-computed gradient for Softmax/Cross-Entropy Loss"""
 
         n_samples = X.shape[0]
-
-        dz = pred.clone()
-
         rows = torch.arange(n_samples)
 
-        dz[rows, actual] -= 1
+        dz2 = pred.clone()
 
-        dz /= n_samples
+        dz2[rows, actual] -= 1
 
-        dW = X.T @ dz
+        dz2 /= n_samples
 
-        db = dz.sum(dim=0)
+        dW2 = a1.T @ dz2
 
-        return dW, db
+        db2 = dz2.sum(dim=0)
+
+        da1 = dz2 @ self.W2.T
+
+        dz1 = da1 * (z1 > 0)
+
+        dW1 = X.T @ dz1
+
+        db1 = dz1.sum(dim=0)
+
+        return dW1, db1, dW2, db2
 
     def save_checkpoint(self, name, epoch, loss_per_epoch, best_loss):
         """Save a training checkpoint"""
@@ -90,8 +101,10 @@ class ManualWineClassification():
 
         state = {
             "epoch": epoch,
-            "W": self.W,
-            "b": self.b,
+            "W1": self.W1,
+            "b1": self.b1,
+            "W2": self.W2,
+            "b2": self.b2,
             "loss_per_epoch": loss_per_epoch,
             "best_loss": best_loss,
         }
@@ -103,8 +116,10 @@ class ManualWineClassification():
         path = Path(self.checkpoint_path) / name
         checkpoint = torch.load(path, weights_only=True, map_location="cpu")
 
-        self.W = checkpoint["W"]
-        self.b = checkpoint["b"]
+        self.W1 = checkpoint["W1"]
+        self.b1 = checkpoint["b1"]
+        self.W2 = checkpoint["W2"]
+        self.b2 = checkpoint["b2"]
 
         return checkpoint
 
@@ -128,11 +143,13 @@ class ManualWineClassification():
             start = last_epoch + 1
 
         for epoch in range(start, epochs):
-            z = self.forward_pass(X_train, self.W, self.b)
+            z1, a1, z2 = self.forward_pass(
+                X_train, self.W1, self.b1, self.W2, self.b2
+            )
 
-            pred = self.softmax(z)
+            pred = self.softmax(z2)
 
-            loss = self.loss(z, y_train)
+            loss = self.loss(z2, y_train)
 
             loss_per_epoch.append(loss.item())
 
@@ -142,11 +159,13 @@ class ManualWineClassification():
                     "best_run.pt", epoch, loss_per_epoch, best_loss
                 )
 
-            dW, db = self.gradient(X_train, pred, y_train)
+            dW1, db1, dW2, db2 = self.gradient(X_train, z1, a1, pred, y_train)
 
             with torch.no_grad():
-                self.W = self.W - learning_rate * dW
-                self.b = self.b - learning_rate * db
+                self.W1 = self.W1 - learning_rate * dW1
+                self.b1 = self.b1 - learning_rate * db1
+                self.W2 = self.W2 - learning_rate * dW2
+                self.b2 = self.b2 - learning_rate * db2
 
         self.save_checkpoint(
             f"last_run.pt", epoch, loss_per_epoch, best_loss
