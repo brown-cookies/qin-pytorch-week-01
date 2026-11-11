@@ -92,7 +92,7 @@ class ManualWineClassification():
 
         return dW1, db1, dW2, db2
 
-    def save_checkpoint(self, name, epoch, loss_per_epoch, best_loss):
+    def save_checkpoint(self, name, epoch, train_loss_per_epoch, val_acc_per_epoch, val_loss_per_epoch, best_val_loss):
         """Save a training checkpoint"""
         directory = Path(self.checkpoint_path)
         directory.mkdir(parents=True, exist_ok=True)
@@ -105,8 +105,10 @@ class ManualWineClassification():
             "b1": self.b1,
             "W2": self.W2,
             "b2": self.b2,
-            "loss_per_epoch": loss_per_epoch,
-            "best_loss": best_loss,
+            "train_loss_per_epoch": train_loss_per_epoch,
+            "val_acc_per_epoch": val_acc_per_epoch,
+            "val_loss_per_epoch": val_loss_per_epoch,
+            "best_val_loss": best_val_loss,
         }
 
         torch.save(state, path)
@@ -123,12 +125,28 @@ class ManualWineClassification():
 
         return checkpoint
 
-    def train_model(self, X_train, y_train, is_resume=False):
+    def evaluate_val(self, X, y):
+        """"""
+        _, _, z2 = self.forward_pass(X, self.W1, self.b1, self.W2, self.b2)
+
+        loss = self.loss(z2, y)
+
+        pred = z2.argmax(dim=1)
+
+        acc = (pred == y).float().mean().item()
+
+        return acc, loss.item()
+
+    def train_model(self, X_train, y_train, X_val, y_val, is_resume=False):
         epochs = self.cfg.epochs
         learning_rate = self.cfg.learning_rate
 
-        best_loss = float("inf")
-        loss_per_epoch = []
+        best_val_loss = float("inf")
+
+        train_loss_per_epoch = []
+        val_acc_per_epoch = []
+        val_loss_per_epoch = []
+
         start = 0
 
         if is_resume:
@@ -137,8 +155,10 @@ class ManualWineClassification():
             )
 
             last_epoch = checkpoint["epoch"]
-            best_loss = checkpoint["best_loss"]
-            loss_per_epoch = checkpoint["loss_per_epoch"]
+            best_val_loss = checkpoint["best_val_loss"]
+            train_loss_per_epoch = checkpoint["train_loss_per_epoch"]
+            val_acc_per_epoch = checkpoint["val_acc_per_epoch"]
+            val_loss_per_epoch = checkpoint["val_loss_per_epoch"]
 
             start = last_epoch + 1
 
@@ -149,16 +169,6 @@ class ManualWineClassification():
 
             pred = self.softmax(z2)
 
-            loss = self.loss(z2, y_train)
-
-            loss_per_epoch.append(loss.item())
-
-            if loss.item() < best_loss:
-                best_loss = loss.item()
-                self.save_checkpoint(
-                    "best_run.pt", epoch, loss_per_epoch, best_loss
-                )
-
             dW1, db1, dW2, db2 = self.gradient(X_train, z1, a1, pred, y_train)
 
             with torch.no_grad():
@@ -167,9 +177,42 @@ class ManualWineClassification():
                 self.W2 = self.W2 - learning_rate * dW2
                 self.b2 = self.b2 - learning_rate * db2
 
+            train_loss = self.loss(z2, y_train)
+
+            val_acc, val_loss = self.evaluate_val(
+                X_val,
+                y_val
+            )
+
+            train_loss_per_epoch.append(train_loss.item())
+            val_acc_per_epoch.append(val_acc)
+            val_loss_per_epoch.append(val_loss)
+
+            if val_loss < best_val_loss:
+                best_val_loss = val_loss
+                self.save_checkpoint(
+                    "best_run.pt",
+                    epoch,
+                    train_loss_per_epoch,
+                    val_acc_per_epoch,
+                    val_loss_per_epoch,
+                    best_val_loss
+                )
+
         self.save_checkpoint(
-            f"last_run.pt", epoch, loss_per_epoch, best_loss
+            "last_run.pt",
+            epoch,
+            train_loss_per_epoch,
+            val_acc_per_epoch,
+            val_loss_per_epoch,
+            best_val_loss
         )
+
+        return {
+            "train_loss_per_epoch": train_loss_per_epoch,
+            "val_acc_per_epoch": val_acc_per_epoch,
+            "val_loss_per_epoch": val_loss_per_epoch
+        }
 
 
 class AutoWineClassificationWithTorch(nn.Module):

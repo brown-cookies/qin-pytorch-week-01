@@ -351,3 +351,4 @@ Epoch   90 | Loss: 1.5019
 | `load_data()` | Asked AI for guidance on how to load, process, split training/testing of the wine dataset. Asked the concept for data preparation, StandardScaler |
 | `softmax()` and `loss()` | Asked AI to explain the purpose of softmax, cross-entropy, one-hot encoded labels, and the numerical-stability steps used in the implementation. |
 | `gradient()` | Used AI explanations to understand the chain rule and how the softmax and cross-entropy derivatives relate to the manual gradient. The handwritten derivation and manual gradient implementation are my own work. |
+| `src/plot.py` | Used AI to generate me code for plotting the history of the training model, the training loss, validation accuracy and validation loss. |
