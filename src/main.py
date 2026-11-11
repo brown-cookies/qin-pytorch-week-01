@@ -49,13 +49,16 @@ def main():
 
     manual_model.load_checkpoint("best_run.pt")
 
-    result = evaluate_model(manual_model, X_test, y_test,
-                            class_names=list(class_names))
+    result = evaluate_model(
+        manual_model,
+        X_test,
+        y_test,
+        class_names=list(class_names)
+    )
 
     print(f"loss:     {result['loss']:.4f}")
     print(f"accuracy: {result['accuracy']:.2%}")
     print(f"macro f1: {result['macro_f1']:.2%}")
-    print(result["confusion"])
 
     return 0
 
