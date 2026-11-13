@@ -19,10 +19,10 @@ class ManualWineClassification():
         """Create the starting weights and bias for two linear layer."""
         generator = torch.Generator().manual_seed(seed)
 
-        W1 = torch.randn(n_features, n_hidden, generator=generator)
+        W1 = torch.randn(n_features, n_hidden, generator=generator) * 0.01
         b1 = torch.zeros(n_hidden)
 
-        W2 = torch.randn(n_hidden, n_classes, generator=generator)
+        W2 = torch.randn(n_hidden, n_classes, generator=generator) * 0.01
         b2 = torch.zeros(n_classes)
 
         return W1, b1, W2, b2
@@ -126,7 +126,7 @@ class ManualWineClassification():
         return checkpoint
 
     def evaluate_val(self, X, y):
-        """"""
+        """Validation evaluation of train per epoch"""
         _, _, z2 = self.forward_pass(X, self.W1, self.b1, self.W2, self.b2)
 
         loss = self.loss(z2, y)
@@ -138,6 +138,7 @@ class ManualWineClassification():
         return acc, loss.item()
 
     def train_model(self, X_train, y_train, X_val, y_val, is_resume=False):
+        """Train the model"""
         epochs = self.cfg.epochs
         learning_rate = self.cfg.learning_rate
 
@@ -216,11 +217,128 @@ class ManualWineClassification():
 
 
 class AutoWineClassificationWithTorch(nn.Module):
-    def __init__(self, n_features, n_classes, cfg: Config):
+    def __init__(self, n_features, n_hidden, n_classes, checkpoint_path, cfg: Config):
         super().__init__()
 
+        self.checkpoint_path = checkpoint_path
         self.cfg = cfg
-        self.linear = nn.Linear(n_features, n_classes)
+        self.forward_pass = nn.Sequential(
+            nn.Linear(n_features, n_hidden),
+            nn.ReLU(),
+            nn.Linear(n_hidden, n_classes)
+        )
+        self.loss = nn.CrossEntropyLoss()
 
     def forward(self, X):
-        return self.linear(X)
+        return self.forward_pass(X)
+
+    def save_checkpoint(self, name, epoch, optim, train_loss_per_epoch, val_acc_per_epoch, val_loss_per_epoch, best_val_loss):
+        """Save a training checkpoint"""
+        directory = Path(self.checkpoint_path)
+        directory.mkdir(parents=True, exist_ok=True)
+
+        path = directory / name
+
+        state = {
+            "epoch": epoch,
+            "model": self.state_dict(),
+            "optimizer": optim.state_dict(),
+            "train_loss_per_epoch": train_loss_per_epoch,
+            "val_acc_per_epoch": val_acc_per_epoch,
+            "val_loss_per_epoch": val_loss_per_epoch,
+            "best_val_loss": best_val_loss,
+        }
+
+        torch.save(state, path)
+
+    def load_checkpoint(self, name):
+        """Load a training checkpoint"""
+        path = Path(self.checkpoint_path) / name
+        checkpoint = torch.load(path, map_location="cpu")
+
+        self.load_state_dict(checkpoint["model"])
+
+        return checkpoint
+
+    def train_model(self, X_train, y_train, X_val, y_val, is_resume=False):
+        """Train the model"""
+        epochs = self.cfg.epochs
+        learning_rate = self.cfg.learning_rate
+        optimizer = torch.optim.SGD(self.parameters(), lr=learning_rate)
+
+        best_val_loss = float("inf")
+
+        train_loss_per_epoch = []
+        val_acc_per_epoch = []
+        val_loss_per_epoch = []
+
+        start = 0
+
+        if is_resume:
+            checkpoint = self.load_checkpoint(
+                "last_run.pt"
+            )
+
+            optimizer.load_state_dict(checkpoint["optimizer"])
+
+            last_epoch = checkpoint["epoch"]
+            best_val_loss = checkpoint["best_val_loss"]
+            train_loss_per_epoch = checkpoint["train_loss_per_epoch"]
+            val_acc_per_epoch = checkpoint["val_acc_per_epoch"]
+            val_loss_per_epoch = checkpoint["val_loss_per_epoch"]
+
+            start = last_epoch + 1
+
+        for epoch in range(start, epochs):
+
+            self.train()
+
+            optimizer.zero_grad()
+
+            z = self(X_train)
+
+            train_loss = self.loss(z, y_train)
+
+            train_loss.backward()
+
+            optimizer.step()
+
+            self.eval()
+
+            with torch.no_grad():
+                val_z = self(X_val)
+                val_acc = (val_z.argmax(dim=1) ==
+                           y_val).float().mean().item()
+                val_loss = self.loss(val_z, y_val)
+
+            train_loss_per_epoch.append(train_loss.item())
+            val_acc_per_epoch.append(val_acc)
+            val_loss_per_epoch.append(val_loss)
+
+            if val_loss < best_val_loss:
+                best_val_loss = val_loss
+                self.save_checkpoint(
+                    "best_run.pt",
+                    epoch,
+                    optimizer,
+                    train_loss_per_epoch,
+                    val_acc_per_epoch,
+                    val_loss_per_epoch,
+                    best_val_loss
+                )
+
+        self.save_checkpoint(
+            "last_run.pt",
+            epoch,
+            optimizer,
+            train_loss_per_epoch,
+            val_acc_per_epoch,
+            val_loss_per_epoch,
+            best_val_loss
+        )
+
+        return {
+            "train_loss_per_epoch": train_loss_per_epoch,
+            "val_acc_per_epoch": val_acc_per_epoch,
+            "val_loss_per_epoch": val_loss_per_epoch
+        }
