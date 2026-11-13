@@ -47,6 +47,14 @@ Machine Learning Repository
 | Classes | 3 (`class_0`: 59 rows, `class_1`: 71 rows, `class_2`: 48 rows) |
 | Missing values | None |
 
+## Figures
+
+### Figure 1: Manual Training History
+![Manual model: loss and validation accuracy](figures/manual_history.png)
+
+### Figure 2: Auto Training History
+![Auto model: loss and validation accuracy](figures/auto_history.png)
+
 ## Claims
 
 ### The hand-compute gradient agrees with Pytorch Autograd
@@ -320,7 +328,7 @@ $$
 \boxed{\frac{\partial L}{\partial z_j}=P_j-y_j}
 $$
 
-## Data from One layer Manual Classification
+## Data from Manual model and Auto Model
 ```
 Epoch    0 | Loss: 3.4481
 Epoch   10 | Loss: 3.1378
@@ -338,12 +346,37 @@ Epoch   90 | Loss: 1.5019
 
 ## Diagnosis
 
+## Diagnosis
+
+### 1. Manual model starts with a much higher loss than the auto model
+
+**Observation:** The manual model starts at a loss of about 11. The auto model starts at about 1.2, so the 
+manual model started about 10x worse than guessing.
+
+**Reason:** The starting weights are too large. Large weights makes the outputs huge, therefore the model is
+confidently sure about a wrong answer, and the loss functions a big loss for that.
+
+**Fix:** I scaled the starting weights the same way `nn.Linear`
+
+**Result:** After the fix, the starting loss is around 1-2 almost the same with the auto model.
+
+### 2. In manual model with 2 layers, the accuracy dropped from 94.44% to 88.89%
+
+**Observation:** After implementing hidden layers, the accuracy dropped from 94.44% to 88.89%
+
+**Reason:** Not yet identified
+
+**Fix** Possible fix (not sure) After scaling the starting weight the same way with `nn.Linear`
+
+**Result:** After the fix, the accuracy is increased to 100%
+
+****
+
 ## Reproducibility
 
 ### Quick Setup
 
 ### Re-running
-
 
 ## AI Usage
 | File/Function | How it was used |

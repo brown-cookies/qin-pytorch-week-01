@@ -1,3 +1,4 @@
+import math
 from pathlib import Path
 
 import torch
@@ -19,10 +20,10 @@ class ManualWineClassification():
         """Create the starting weights and bias for two linear layer."""
         generator = torch.Generator().manual_seed(seed)
 
-        W1 = torch.randn(n_features, n_hidden, generator=generator) * 0.01
+        W1 = torch.randn(n_features, n_hidden, generator=generator) * 1
         b1 = torch.zeros(n_hidden)
 
-        W2 = torch.randn(n_hidden, n_classes, generator=generator) * 0.01
+        W2 = torch.randn(n_hidden, n_classes, generator=generator) * 1
         b2 = torch.zeros(n_classes)
 
         return W1, b1, W2, b2
