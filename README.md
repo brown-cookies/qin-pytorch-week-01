@@ -1,4 +1,32 @@
-# A neural network from first principles  
+# A neural network from first principles
+
+This project explores how a neural network learns by implementing and training two versions of a classifier on the Wine recognition dataset: a manually implemented model and a PyTorch model built with nn.Module.
+
+The README documents the dataset, the manual gradient calculation, the softmax and cross-entropy derivation, and a comparison of the models' training results. It also includes the steps needed to reproduce the experiments.
+
+The figures below compare the training histories of the two implementations. Each plot shows training loss and validation accuracy over the training epochs, making it easier to compare how the manual and PyTorch models learn.
+
+### Figure 1: Manual Training History
+![Manual model: loss and validation accuracy](figures/manual_history.png)
+
+### Figure 2: Auto Training History
+![Auto model: loss and validation accuracy](figures/auto_history.png)
+
+## Table of Contents
+
+- [Problem](#problem)
+- [Data](#data)
+- [Claims](#claims)
+  - [The hand-compute gradient agrees with Pytorch Autograd](#the-hand-compute-gradient-agrees-with-pytorch-autograd)
+- [Softmax and Cross-Entropy Gradient Derivation](#softmax-and-cross-entropy-gradient-derivation)
+- [Data after training Manual and Auto](#data-after-training-the-manual-and-auto)
+- [Diagnosis](#diagnosis)
+- [Reproducibility](#reproducibility)
+  - [Quick Setup](#quick-setup)
+  - [Re-running](#re-running)
+- [AI Usage](#ai-usage)
+
+
 
 ## Problem
 
@@ -18,20 +46,6 @@ get your numbers.
 What matters is that you can say what the abstraction is hiding, and that you
 can show it rather than assert it.
 
-## Table of Contents
-
-- [Data](#data)
-- [Claims](#claims)
-  - [The hand-compute gradient agrees with Pytorch Autograd](#the-hand-compute-gradient-agrees-with-pytorch-autograd)
-- [Softmax and Cross-Entropy Gradient Derivation](#softmax-and-cross-entropy-gradient-derivation)
-- [Data from One Layer Manual Classification](#data-from-one-layer-manual-classification)
-- [Error Analysis](#error-analysis)
-- [Diagnosis](#diagnosis)
-- [Reproducibility](#reproducibility)
-  - [Quick Setup](#quick-setup)
-  - [Re-running](#re-running)
-- [AI Usage](#ai-usage)
-
 ## Data
 
 The dataset is the Wine recognition dataset, loaded with
@@ -47,22 +61,15 @@ Machine Learning Repository
 | Classes | 3 (`class_0`: 59 rows, `class_1`: 71 rows, `class_2`: 48 rows) |
 | Missing values | None |
 
-## Figures
-
-### Figure 1: Manual Training History
-![Manual model: loss and validation accuracy](figures/manual_history.png)
-
-### Figure 2: Auto Training History
-![Auto model: loss and validation accuracy](figures/auto_history.png)
-
 ## Claims
 
 ### The hand-compute gradient agrees with Pytorch Autograd
 
-**Claim.** For a single linear layer with softmax and cross-entropy loss, the
-manual gradients `dW` and `db` match the gradients PyTorch autograd computes
-for the same weights and data.
-**Tolerance.** I used PyTorch default tolerance becuase it works.
+**Claim.** For a double linear layer with softmax and cross-entropy loss, the
+manual gradients `dW1`, `dW2`, `db1`, and `db2` match the gradients PyTorch autograd computes
+for the same weights and data. Even though the math behind the scene is almost correct, A possible rounding off each
+computation drifts the hand-compute and the autograd.
+**Tolerance.** I used PyTorch default tolerance `absolute tolerance 1e-5` and `relative tolerance 1.3e-6`
 
 ```
 pytest -k test_manual_gradient_matches_pytorch_autograd
@@ -328,23 +335,17 @@ $$
 \boxed{\frac{\partial L}{\partial z_j}=P_j-y_j}
 $$
 
-## Data from Manual model and Auto Model
+## Data After training the Manual and Auto
 ```
-Epoch    0 | Loss: 3.4481
-Epoch   10 | Loss: 3.1378
-Epoch   20 | Loss: 2.8515
-Epoch   30 | Loss: 2.5900
-Epoch   40 | Loss: 2.3533
-Epoch   50 | Loss: 2.1406
-Epoch   60 | Loss: 1.9508
-Epoch   70 | Loss: 1.7823
-Epoch   80 | Loss: 1.6333
-Epoch   90 | Loss: 1.5019
+[manual]
+loss:     0.0450
+accuracy: 100.00%
+macro f1: 100.00%
+[auto]
+loss:     0.0361
+accuracy: 100.00%
+macro f1: 100.00%
 ```
-
-## Error Analysis
-
-## Diagnosis
 
 ## Diagnosis
 
@@ -364,11 +365,26 @@ confidently sure about a wrong answer, and the loss functions a big loss for tha
 
 **Observation:** After implementing hidden layers, the accuracy dropped from 94.44% to 88.89%
 
-**Reason:** Not yet identified
+**Reason:** The 1 layer and 2 layer used different data split configuration. The 1 layer, I used 70% train 30% test
+but when I implemented the additional layer, I also added the validation split 70% train 15% validation 15% test.
+With the first setup, we have 54 test samples, the second setup we have 27 test samples, 94.44% or 54 is 51 correct
+predictions, 88.89% of 27 is 24 correct predictions, both misclassified 3 samples.
 
-**Fix** Possible fix (not sure) After scaling the starting weight the same way with `nn.Linear`
+**Fix** Either re-run the 1 layer using the new data split config, or re-run the two layer usng the previous 
+data split config
 
-**Result:** After the fix, the accuracy is increased to 100%
+**Result:** 
+
+### 3. Manual model switch down then up around epochs 250-400
+
+**Observation:** The graph of validation accuracy, around the epoch 250-400, it went down, then up like a switch
+
+**Reason:** This is probably related to the first diagnosis, the starting weight are too large, That's probably a 
+cause whythe model is wrongly classifying a class.
+
+**Fix** Scaled the weight the same way with `nn.Linear`
+
+**Result:** After the fix, the switch down dissappeared
 
 ****
 
@@ -376,7 +392,39 @@ confidently sure about a wrong answer, and the loss functions a big loss for tha
 
 ### Quick Setup
 
+Needs Python 3.12. Everything runs on CPU, no GPU needed.
+
+```bash
+git clone https://github.com/brown-cookies/qin-pytorch-week-01.git
+cd qin-pytorch-week-01
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python -m pip install --no-deps -e .
+python -m pytest
+```
+
 ### Re-running
+
+**1. Split.** Stratified, `seed = 42` (in `src/config.py`), so two runs give the same indices. The scaler is fitted on the training rows only.
+
+```bash
+python -m src.main split --out runs/split.json
+```
+
+**2. Smoke training run.** 20 epochs on 32 training rows. It only checks that the training code runs.
+
+```bash
+python -m src.main train --smoke --out runs/smoke
+```
+
+**3. Full training.** Writes `runs/manual/best_run.pt` (lowest validation loss) and `last_run.pt`.
+
+```bash
+python -m src.main train --out runs/manual
+```
+
+To train both the manual and the `nn.Module` model and plot their histories, run `python -m src.main run`.
 
 ## AI Usage
 | File/Function | How it was used |
@@ -385,3 +433,4 @@ confidently sure about a wrong answer, and the loss functions a big loss for tha
 | `softmax()` and `loss()` | Asked AI to explain the purpose of softmax, cross-entropy, one-hot encoded labels, and the numerical-stability steps used in the implementation. |
 | `gradient()` | Used AI explanations to understand the chain rule and how the softmax and cross-entropy derivatives relate to the manual gradient. The handwritten derivation and manual gradient implementation are my own work. |
 | `src/plot.py` | Used AI to generate me code for plotting the history of the training model, the training loss, validation accuracy and validation loss. |
+| `.github/workflows/ci.yml` | Used AI to draft how to evaluate released checkpoint |
