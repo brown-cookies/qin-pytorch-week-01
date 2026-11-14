@@ -65,7 +65,7 @@ Machine Learning Repository
 
 ### The hand-compute gradient agrees with Pytorch Autograd
 
-**Claim.** For a single linear layer with softmax and cross-entropy loss, the
+**Claim.** For a double linear layer with softmax and cross-entropy loss, the
 manual gradients `dW1`, `dW2`, `db1`, and `db2` match the gradients PyTorch autograd computes
 for the same weights and data. Even though the math behind the scene is almost correct, A possible rounding off each
 computation drifts the hand-compute and the autograd.
@@ -365,21 +365,26 @@ confidently sure about a wrong answer, and the loss functions a big loss for tha
 
 **Observation:** After implementing hidden layers, the accuracy dropped from 94.44% to 88.89%
 
-**Reason:** Not yet identified
+**Reason:** The 1 layer and 2 layer used different data split configuration. The 1 layer, I used 70% train 30% test
+but when I implemented the additional layer, I also added the validation split 70% train 15% validation 15% test.
+With the first setup, we have 54 test samples, the second setup we have 27 test samples, 94.44% or 54 is 51 correct
+predictions, 88.89% of 27 is 24 correct predictions, both misclassified 3 samples.
 
-**Fix** 
+**Fix** Either re-run the 1 layer using the new data split config, or re-run the two layer usng the previous 
+data split config
 
-**Result:**
+**Result:** 
 
 ### 3. Manual model switch down then up around epochs 250-400
 
 **Observation:** The graph of validation accuracy, around the epoch 250-400, it went down, then up like a switch
 
-**Reason:** Not yet identified
+**Reason:** This is probably related to the first diagnosis, the starting weight are too large, That's probably a 
+cause whythe model is wrongly classifying a class.
 
-**Fix** 
+**Fix** Scaled the weight the same way with `nn.Linear`
 
-**Result:**
+**Result:** After the fix, the switch down dissappeared
 
 ****
 
@@ -392,9 +397,9 @@ Needs Python 3.12. Everything runs on CPU, no GPU needed.
 ```bash
 git clone https://github.com/brown-cookies/qin-pytorch-week-01.git
 cd qin-pytorch-week-01
-python3.12 -m venv .venv
+python -m venv .venv
 source .venv/bin/activate
-python -m pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+python -m pip install -r requirements.txt
 python -m pip install --no-deps -e .
 python -m pytest
 ```
