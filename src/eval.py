@@ -7,9 +7,6 @@ from sklearn.metrics import (
 
 from src.train import ManualWineClassification, AutoWineClassificationWithTorch
 
-# TODO: Add model evaluation, both for manual and auto
-# TODO: Add comparison evaluation between manual and auto
-
 
 def evaluate_model(model: ManualWineClassification | AutoWineClassificationWithTorch, X, y, class_names=None):
 

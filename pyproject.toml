@@ -7,3 +7,17 @@ dependencies = []
 
 # TODO: To be added later
 [tool.reproduce]
+train_smoke = ["-m", "src.main", "--smoke", "--out", "runs/smoke"]
+evaluate = [
+    "-m",
+    "src.main",
+    "--checkpoint",
+    "{checkpoint}",
+    "--metrics-out",
+    "{metrics_out}",
+]
+split = ["-m", "src.main", "split", "--out", "{split_out}"]
+checkpoint_url = "https://github.com/your-github-username/your-project/releases/download/v1.0.0/model.pt"
+metric_name = "test_accuracy"
+metric_value = 0.9
+tolerance = 0.001

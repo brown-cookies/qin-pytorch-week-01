@@ -366,9 +366,9 @@ confidently sure about a wrong answer, and the loss functions a big loss for tha
 
 **Reason:** Not yet identified
 
-**Fix** Possible fix (not sure) After scaling the starting weight the same way with `nn.Linear`
+**Fix** 
 
-**Result:** After the fix, the accuracy is increased to 100%
+**Result:** 
 
 ****
 
