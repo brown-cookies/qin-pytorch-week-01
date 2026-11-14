@@ -1,4 +1,32 @@
-# A neural network from first principles  
+# A neural network from first principles
+
+This project explores how a neural network learns by implementing and training two versions of a classifier on the Wine recognition dataset: a manually implemented model and a PyTorch model built with nn.Module.
+
+The README documents the dataset, the manual gradient calculation, the softmax and cross-entropy derivation, and a comparison of the models' training results. It also includes the steps needed to reproduce the experiments.
+
+The figures below compare the training histories of the two implementations. Each plot shows training loss and validation accuracy over the training epochs, making it easier to compare how the manual and PyTorch models learn.
+
+### Figure 1: Manual Training History
+![Manual model: loss and validation accuracy](figures/manual_history.png)
+
+### Figure 2: Auto Training History
+![Auto model: loss and validation accuracy](figures/auto_history.png)
+
+## Table of Contents
+
+- [Problem](#problem)
+- [Data](#data)
+- [Claims](#claims)
+  - [The hand-compute gradient agrees with Pytorch Autograd](#the-hand-compute-gradient-agrees-with-pytorch-autograd)
+- [Softmax and Cross-Entropy Gradient Derivation](#softmax-and-cross-entropy-gradient-derivation)
+- [Data after training Manual and Auto](#data-after-training-the-manual-and-auto)
+- [Diagnosis](#diagnosis)
+- [Reproducibility](#reproducibility)
+  - [Quick Setup](#quick-setup)
+  - [Re-running](#re-running)
+- [AI Usage](#ai-usage)
+
+
 
 ## Problem
 
@@ -18,19 +46,6 @@ get your numbers.
 What matters is that you can say what the abstraction is hiding, and that you
 can show it rather than assert it.
 
-## Table of Contents
-
-- [Data](#data)
-- [Claims](#claims)
-  - [The hand-compute gradient agrees with Pytorch Autograd](#the-hand-compute-gradient-agrees-with-pytorch-autograd)
-- [Softmax and Cross-Entropy Gradient Derivation](#softmax-and-cross-entropy-gradient-derivation)
-- [Data after training Manual and Auto](#data-after-training-the-manual-and-auto)
-- [Diagnosis](#diagnosis)
-- [Reproducibility](#reproducibility)
-  - [Quick Setup](#quick-setup)
-  - [Re-running](#re-running)
-- [AI Usage](#ai-usage)
-
 ## Data
 
 The dataset is the Wine recognition dataset, loaded with
@@ -45,14 +60,6 @@ Machine Learning Repository
 | Features | 13, all numeric (chemical measurements such as alcohol, proline, flavanoids) |
 | Classes | 3 (`class_0`: 59 rows, `class_1`: 71 rows, `class_2`: 48 rows) |
 | Missing values | None |
-
-## Figures
-
-### Figure 1: Manual Training History
-![Manual model: loss and validation accuracy](figures/manual_history.png)
-
-### Figure 2: Auto Training History
-![Auto model: loss and validation accuracy](figures/auto_history.png)
 
 ## Claims
 
@@ -331,14 +338,13 @@ $$
 ## Data After training the Manual and Auto
 ```
 [manual]
-loss:     0.3340
-accuracy: 88.89%
-macro f1: 88.34%
-
+loss:     0.5079
+accuracy: 85.19%
+macro f1: 84.91%
 [auto]
-loss:     0.0437
-accuracy: 100.00%
-macro f1: 100.00%
+loss:     0.3829
+accuracy: 92.59%
+macro f1: 93.33%
 ```
 
 ## Diagnosis
