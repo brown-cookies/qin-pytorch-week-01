@@ -338,13 +338,13 @@ $$
 ## Data After training the Manual and Auto
 ```
 [manual]
-loss:     0.5079
-accuracy: 85.19%
-macro f1: 84.91%
+loss:     0.0450
+accuracy: 100.00%
+macro f1: 100.00%
 [auto]
-loss:     0.3829
-accuracy: 92.59%
-macro f1: 93.33%
+loss:     0.0361
+accuracy: 100.00%
+macro f1: 100.00%
 ```
 
 ## Diagnosis
