@@ -24,8 +24,7 @@ can show it rather than assert it.
 - [Claims](#claims)
   - [The hand-compute gradient agrees with Pytorch Autograd](#the-hand-compute-gradient-agrees-with-pytorch-autograd)
 - [Softmax and Cross-Entropy Gradient Derivation](#softmax-and-cross-entropy-gradient-derivation)
-- [Data from One Layer Manual Classification](#data-from-one-layer-manual-classification)
-- [Error Analysis](#error-analysis)
+- [Data after training Manual and Auto](#data-after-training-the-manual-and-auto)
 - [Diagnosis](#diagnosis)
 - [Reproducibility](#reproducibility)
   - [Quick Setup](#quick-setup)
@@ -60,9 +59,10 @@ Machine Learning Repository
 ### The hand-compute gradient agrees with Pytorch Autograd
 
 **Claim.** For a single linear layer with softmax and cross-entropy loss, the
-manual gradients `dW` and `db` match the gradients PyTorch autograd computes
-for the same weights and data.
-**Tolerance.** I used PyTorch default tolerance becuase it works.
+manual gradients `dW1`, `dW2`, `db1`, and `db2` match the gradients PyTorch autograd computes
+for the same weights and data. Even though the math behind the scene is almost correct, A possible rounding off each
+computation drifts the hand-compute and the autograd.
+**Tolerance.** I used PyTorch default tolerance `absolute tolerance 1e-5` and `relative tolerance 1.3e-6`
 
 ```
 pytest -k test_manual_gradient_matches_pytorch_autograd
@@ -328,23 +328,18 @@ $$
 \boxed{\frac{\partial L}{\partial z_j}=P_j-y_j}
 $$
 
-## Data from Manual model and Auto Model
+## Data After training the Manual and Auto
 ```
-Epoch    0 | Loss: 3.4481
-Epoch   10 | Loss: 3.1378
-Epoch   20 | Loss: 2.8515
-Epoch   30 | Loss: 2.5900
-Epoch   40 | Loss: 2.3533
-Epoch   50 | Loss: 2.1406
-Epoch   60 | Loss: 1.9508
-Epoch   70 | Loss: 1.7823
-Epoch   80 | Loss: 1.6333
-Epoch   90 | Loss: 1.5019
+[manual]
+loss:     0.3340
+accuracy: 88.89%
+macro f1: 88.34%
+
+[auto]
+loss:     0.0437
+accuracy: 100.00%
+macro f1: 100.00%
 ```
-
-## Error Analysis
-
-## Diagnosis
 
 ## Diagnosis
 
@@ -368,7 +363,17 @@ confidently sure about a wrong answer, and the loss functions a big loss for tha
 
 **Fix** 
 
-**Result:** 
+**Result:**
+
+### 3. Manual model switch down then up around epochs 250-400
+
+**Observation:** The graph of validation accuracy, around the epoch 250-400, it went down, then up like a switch
+
+**Reason:** Not yet identified
+
+**Fix** 
+
+**Result:**
 
 ****
 
@@ -376,7 +381,39 @@ confidently sure about a wrong answer, and the loss functions a big loss for tha
 
 ### Quick Setup
 
+Needs Python 3.12. Everything runs on CPU, no GPU needed.
+
+```bash
+git clone https://github.com/brown-cookies/qin-pytorch-week-01.git
+cd qin-pytorch-week-01
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+python -m pip install --no-deps -e .
+python -m pytest
+```
+
 ### Re-running
+
+**1. Split.** Stratified, `seed = 42` (in `src/config.py`), so two runs give the same indices. The scaler is fitted on the training rows only.
+
+```bash
+python -m src.main split --out runs/split.json
+```
+
+**2. Smoke training run.** 20 epochs on 32 training rows. It only checks that the training code runs.
+
+```bash
+python -m src.main train --smoke --out runs/smoke
+```
+
+**3. Full training.** Writes `runs/manual/best_run.pt` (lowest validation loss) and `last_run.pt`.
+
+```bash
+python -m src.main train --out runs/manual
+```
+
+To train both the manual and the `nn.Module` model and plot their histories, run `python -m src.main run`.
 
 ## AI Usage
 | File/Function | How it was used |
@@ -385,3 +422,4 @@ confidently sure about a wrong answer, and the loss functions a big loss for tha
 | `softmax()` and `loss()` | Asked AI to explain the purpose of softmax, cross-entropy, one-hot encoded labels, and the numerical-stability steps used in the implementation. |
 | `gradient()` | Used AI explanations to understand the chain rule and how the softmax and cross-entropy derivatives relate to the manual gradient. The handwritten derivation and manual gradient implementation are my own work. |
 | `src/plot.py` | Used AI to generate me code for plotting the history of the training model, the training loss, validation accuracy and validation loss. |
+| `.github/workflows/ci.yml` | Used AI to draft how to evaluate released checkpoint |
