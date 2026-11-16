@@ -1,3 +1,5 @@
+import numpy as np
+
 from sklearn.datasets import load_wine
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -5,7 +7,34 @@ from sklearn.preprocessing import StandardScaler
 import torch
 
 
-def load_datasets(*, val_split: int, test_split: int, seed: int):
+def split_indices(*, y, val_split: float, test_split: float, seed: int):
+
+    indices = np.arange(len(y))
+
+    train_val_index, test_index = train_test_split(
+        indices,
+        test_size=test_split,
+        stratify=y,
+        random_state=seed,
+    )
+
+    val_fraction = val_split / (1 - test_split)
+
+    train_index, val_index = train_test_split(
+        train_val_index,
+        test_size=val_fraction,
+        stratify=y[train_val_index],
+        random_state=seed,
+    )
+
+    return {
+        "train": train_index,
+        "validation": val_index,
+        "test": test_index,
+    }
+
+
+def load_datasets(*, val_split: float, test_split: float, seed: int):
     """
     Load the Wine dataset, split it, standardize the features,
     and convert everything into PyTorch tensors.
@@ -15,21 +44,20 @@ def load_datasets(*, val_split: int, test_split: int, seed: int):
     X = wine.data
     y = wine.target
 
-    X_temp, X_test, y_temp, y_test = train_test_split(
-        X, y,
-        test_size=test_split,
-        stratify=y,
-        random_state=seed,
+    split = split_indices(
+        y=y,
+        val_split=val_split,
+        test_split=test_split,
+        seed=seed,
     )
 
-    val_size = val_split / (1 - test_split)
+    X_train = X[split["train"]]
+    X_val = X[split["validation"]]
+    X_test = X[split["test"]]
 
-    X_train, X_val, y_train, y_val = train_test_split(
-        X_temp, y_temp,
-        test_size=val_size,
-        stratify=y_temp,
-        random_state=seed,
-    )
+    y_train = y[split["train"]]
+    y_val = y[split["validation"]]
+    y_test = y[split["test"]]
 
     scaler = StandardScaler()
     X_train = scaler.fit_transform(X_train)

@@ -3,6 +3,9 @@ name: CI
 on:
     pull_request:
 
+permissions:
+    contents: read
+
 jobs:
     test:
         runs-on: ubuntu-latest
@@ -12,7 +15,27 @@ jobs:
               with:
                   python-version: "3.12"
                   cache: pip
-            - name: Install packages
-              run: python -m pip install -r requirements.txt && python -m pip install --no-deps -e .
+            - name: Install packages (CPU torch)
+              run: |
+                  python -m pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+                  python -m pip install --no-deps -e .
             - name: Tests
               run: python -m pytest
+            - name: Smoke training run
+              run: python -m src.main train --smoke --out runs/smoke
+            - name: Evaluate released checkpoint
+              run: |
+                  python - <<'EOF'
+                  import tomllib, json, subprocess, sys, urllib.request
+                  cfg = tomllib.load(open("pyproject.toml", "rb"))["tool"]["reproduce"]
+                  urllib.request.urlretrieve(cfg["checkpoint_url"], "model.pt")
+                  cmd = [sys.executable] + [
+                      a.replace("{checkpoint}", "model.pt").replace("{metrics_out}", "metrics.json")
+                      for a in cfg["evaluate"]
+                  ]
+                  subprocess.run(cmd, check=True)
+                  got = json.load(open("metrics.json"))[cfg["metric_name"]]
+                  diff = abs(got - cfg["metric_value"])
+                  print("measured", got, "claimed", cfg["metric_value"], "diff", diff)
+                  sys.exit(0 if diff <= cfg["tolerance"] else 1)
+                  EOF

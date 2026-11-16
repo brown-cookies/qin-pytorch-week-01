@@ -66,19 +66,27 @@ def test_manual_gradient_matches_pytorch_autograd(config):
     torch.testing.assert_close(
         manual_dW1,
         auto_W1.grad,
+        rtol=1.3e-6,
+        atol=1e-5,
     )
 
     torch.testing.assert_close(
         manual_db1,
         auto_b1.grad,
+        rtol=1.3e-6,
+        atol=1e-5,
     )
 
     torch.testing.assert_close(
         manual_dW2,
         auto_W2.grad,
+        rtol=1.3e-6,
+        atol=1e-5,
     )
 
     torch.testing.assert_close(
         manual_db2,
         auto_b2.grad,
+        rtol=1.3e-6,
+        atol=1e-5,
     )

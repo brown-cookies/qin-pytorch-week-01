@@ -3,7 +3,26 @@ name = "qin-pytorch-week-01"
 version = "0.1.0"
 description = "A neural network from first principles"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "matplotlib==3.11.2",
+    "numpy==2.5.4",
+    "scikit-learn==1.9.1",
+    "torch==2.15.0",
+]
 
-# TODO: To be added later
 [tool.reproduce]
+train_smoke = ["-m", "src.main", "train", "--smoke", "--out", "runs/smoke"]
+evaluate = [
+    "-m",
+    "src.main",
+    "evaluate",
+    "--checkpoint",
+    "{checkpoint}",
+    "--metrics-out",
+    "{metrics_out}",
+]
+split = ["-m", "src.main", "split", "--out", "{split_out}"]
+checkpoint_url = "https://github.com/brown-cookies/qin-pytorch-week-01/releases/download/v1.0.0/best_run.pt"
+metric_name = "test_accuracy"
+metric_value = 1.00
+tolerance = 0.001
